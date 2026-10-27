@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: git-seance
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: SEANCE_LLM_API_KEY
+        sync: false            # set it in the Render dashboard, never in git
+      - key: SEANCE_LLM_BASE_URL
+        value: https://models.jarvislabs.net/v1
+      - key: SEANCE_LLM_MODEL
+        value: gemma-4-26b-a4b-it
+      - key: SEANCE_TRUST_PROXY
+        value: "1"
+      - key: SEANCE_LLM_CALLS_PER_IP_HOUR
+        value: "40"
+      - key: SEANCE_LLM_CALLS_PER_DAY
+        value: "2500"

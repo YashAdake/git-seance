@@ -1,0 +1,19 @@
+[project]
+name = "git-seance"
+version = "0.1.0"
+description = "Every deleted file is a ghost. Summon one, through an open-weight model."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Yash Adake" }]
+requires-python = ">=3.10"
+dependencies = []  # standard library only, on purpose
+
+[project.scripts]
+git-seance = "seance.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["seance"]
