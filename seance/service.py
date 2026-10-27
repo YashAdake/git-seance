@@ -13,7 +13,7 @@ from pathlib import Path
 from .config import Settings
 from .dossier import Dossier, build_dossier
 from .gitio import GitError
-from .history import Ghost, find_ghosts, head_sha
+from .history import SCAN_VERSION, Ghost, find_ghosts, head_sha
 from .llm import LLM, LLMError
 from .medium import Epitaph, fallback_epitaph, write_epitaph
 from .repos import Repo, RepoRegistry
@@ -96,7 +96,7 @@ class Seance:
             cached = self._graveyards.get(repo_id)
             if cached and cached["head"] == head:
                 return cached
-            disk = self.settings.cache_dir / "graveyards" / f"{repo_id}-{head[:12]}.json"
+            disk = self.settings.cache_dir / "graveyards" / f"{repo_id}-{head[:12]}-v{SCAN_VERSION}.json"
             if disk.is_file():
                 data = json.loads(disk.read_text(encoding="utf-8"))
                 ghosts = [Ghost(**g) for g in data["ghosts"]]

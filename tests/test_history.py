@@ -37,6 +37,8 @@ class ParsingTests(unittest.TestCase):
         self.assertEqual(classify(".travis.yml"), "config")
         self.assertEqual(classify("jquery.min.js"), "vendor")
         self.assertEqual(classify("Pipfile"), "config")
+        self.assertEqual(classify("requests/packages/urllib3/poolmanager.py"), "vendor")
+        self.assertEqual(classify("packages/core/src/index.ts"), "code")
         self.assertEqual(classify(".idea/proj.iml"), "config")
 
 

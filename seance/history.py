@@ -16,6 +16,9 @@ from dataclasses import asdict, dataclass, field
 
 from .gitio import run_git
 
+# Bump when ghost detection or classification changes, to invalidate cached graveyards.
+SCAN_VERSION = 2
+
 REC, FLD, END = "\x1e", "\x1f", "\x1d"
 # One record per commit: header fields, END, then --name-status lines.
 LOG_FORMAT = "%x1e%H%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%s%x1d"
@@ -111,6 +114,8 @@ _CONFIG_EXT = {"json", "yml", "yaml", "toml", "ini", "cfg", "conf", "lock", "xml
 _CONFIG_NAMES = {"makefile", "dockerfile", "procfile", "gemfile", "rakefile", "pipfile", "vagrantfile",
                  "license", "authors", "contributors", "manifest.in", "tox.ini", "requirements.txt"}
 _VENDOR_PARTS = {"vendor", "vendors", "node_modules", "third_party", "thirdparty", "external", "dist", "bower_components"}
+# Vendored only when nested (requests/packages/urllib3), not a monorepo's top-level packages/.
+_NESTED_VENDOR_PARTS = {"packages", "_vendor", "vendored", "extern", "deps", "lib-dist"}
 _TEST_PARTS = {"test", "tests", "spec", "specs", "__tests__", "testing", "testdata", "fixtures"}
 
 
@@ -120,7 +125,7 @@ def classify(path: str) -> str:
     parts = lower.split("/")
     name = parts[-1]
     ext = name.rsplit(".", 1)[-1] if "." in name.lstrip(".") else ""
-    if any(p in _VENDOR_PARTS for p in parts[:-1]) or ".min." in name:
+    if any(p in _VENDOR_PARTS for p in parts[:-1]) or ".min." in name             or any(p in _NESTED_VENDOR_PARTS for p in parts[1:-1]):
         return "vendor"
     if ext in _ASSET_EXT:
         return "asset"

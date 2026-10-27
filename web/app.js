@@ -16,6 +16,8 @@ const state = {
   busy: false,
 };
 
+const GHOST_ICO = '<svg class="ico" aria-hidden="true"><use href="#ghost-glyph"/></svg>';
+const KIND_WEIGHT = { code: 1, test: 0.75, docs: 0.6, config: 0.45, asset: 0.15, vendor: 0.1 };
 const KIND_GLYPH = { code: "</>", test: "✓", docs: "¶", config: "⚙", asset: "◆", vendor: "▣" };
 const KIND_LABEL = { code: "Code", test: "Tests", docs: "Docs", config: "Config", asset: "Assets", vendor: "Vendored" };
 const OPENING = "Introduce yourself to the visitor who summoned you: who you were, what you did, and how you died.";
@@ -201,7 +203,7 @@ function renderHome() {
   state.yard = null;
   document.title = "Git Séance";
   const c = state.config;
-  const local = c.local_repos.map((r) => `<a class="chip" href="#/r/${esc(r.id)}">⚰ ${esc(r.label)}</a>`).join("");
+  const local = c.local_repos.map((r) => `<a class="chip" href="#/r/${esc(r.id)}">${GHOST_ICO}${esc(r.label)}</a>`).join("");
   const demos = c.demo_repos.map((r) => `<button class="chip" data-repo="${esc(r)}">${esc(r)}</button>`).join("");
   app.innerHTML = `
     <section class="hero">
@@ -261,7 +263,7 @@ async function showYard(repoId) {
     return;
   }
   state.repoId = repoId;
-  state.filter = { q: "", kinds: new Set(), sort: "recent", year: null };
+  state.filter = { q: "", kinds: new Set(), sort: "notable", year: null };
   state.shown = 120;
   renderYard();
 }
@@ -299,6 +301,7 @@ function renderYard() {
       <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <input id="q" placeholder="Search the dead by name or path" aria-label="Search ghosts"></label>
       <select class="sort" id="sort" aria-label="Sort ghosts">
+        <option value="notable">Most notable souls</option>
         <option value="recent">Most recently departed</option>
         <option value="ancient">Longest dead</option>
         <option value="longest">Longest lived</option>
@@ -354,7 +357,11 @@ function filtered() {
   const { q, kinds, sort, year: y } = state.filter;
   let list = state.yard.ghosts.filter((g) =>
     (!q || g.path.toLowerCase().includes(q)) && (!kinds.size || kinds.has(g.kind)) && (!y || year(g.died_at) === y));
+  // Long-lived first-party code first; one member of a mass grave counts for less.
+  const notability = (g) => (Math.log2((days(g) ?? 0) + 2) + (g.lives - 1) * 2)
+    * (KIND_WEIGHT[g.kind] ?? 0.5) / (1 + Math.log10(g.siblings + 1) / 2);
   const by = {
+    notable: (a, b) => notability(b) - notability(a) || b.died_at - a.died_at,
     recent: (a, b) => b.died_at - a.died_at,
     ancient: (a, b) => a.died_at - b.died_at,
     longest: (a, b) => (days(b) ?? -1) - (days(a) ?? -1),
@@ -367,7 +374,7 @@ function filtered() {
 function stone(g) {
   const d = days(g);
   const shape = hashCode(g.id) % 3;
-  const h = 196 + Math.min(54, Math.log2((d ?? 0) + 1) * 4.4);
+  const h = 168 + Math.min(52, Math.log2((d ?? 0) + 1) * 4.2);
   const moss = Math.min(1, (Date.now() / 1000 - g.died_at) / (86400 * 365 * 8));
   const flowers = marigolds(state.repoId, g.id);
   return `<div class="plot">
@@ -512,7 +519,7 @@ function renderChamber() {
 
   chamber.innerHTML = `<div class="chamber-inner">
     <div class="chamber-top">
-      <div class="crumbs"><a href="#/r/${esc(state.repoId)}">⚰ ${esc(d.repo_label)}</a> / ${esc(g.dir ? g.dir + "/" : "")}<strong>${esc(g.name)}</strong></div>
+      <div class="crumbs"><a href="#/r/${esc(state.repoId)}">${GHOST_ICO}${esc(d.repo_label)}</a> / ${esc(g.dir ? g.dir + "/" : "")}<strong>${esc(g.name)}</strong></div>
       <a class="btn btn-ghost" href="#/r/${esc(state.repoId)}" aria-label="Close">Leave the chamber ✕</a>
     </div>
     <div class="chamber-grid">
@@ -536,7 +543,7 @@ function renderChamber() {
           <div class="fact"><div class="k">Died</div><div class="v">${fmtDate(death.at)} by ${esc(death.author)} ${commitLink(death.sha)}<br><em>“${esc(death.subject)}”</em></div></div>
           ${d.contributors.length ? `<div class="fact"><div class="k">Shaped by</div><div class="v">${d.contributors.map((c) => `${esc(c.name)} <span class="count">(${c.commits})</span>`).join(", ")}</div></div>` : ""}
           ${g.former_names.length ? `<div class="fact"><div class="k">Former names</div><div class="v pills">${g.former_names.map((n) => `<span class="pill">${esc(n)}</span>`).join("")}</div></div>` : ""}
-          ${d.buried_with_total ? `<div class="fact"><div class="k">Buried alongside</div><div class="v"><div class="pills">${d.buried_with.slice(0, 12).map((p) => `<span class="pill">${esc(p)}</span>`).join("")}${d.buried_with_total > 12 ? `<span class="pill">+${d.buried_with_total - 12} more</span>` : ""}</div></div></div>` : ""}
+          ${d.buried_with_total ? `<div class="fact"><div class="k">Buried alongside</div><div class="v"><div class="pills">${d.buried_with.slice(0, 8).map((p) => `<span class="pill">${esc(p)}</span>`).join("")}${d.buried_with_total > 8 ? `<span class="pill">+${d.buried_with_total - 8} more</span>` : ""}</div></div></div>` : ""}
           ${d.successors.length ? `<div class="fact"><div class="k">Heir</div><div class="v pills">${d.successors.map((s) => `<span class="pill heir">${esc(s.path)}</span>`).join("")}</div></div>` : ""}
           <div class="fact"><div class="k">Last body</div><div class="v">${d.binary ? "binary" : `${plural(d.line_count, "line")}`} · ${(d.size_bytes / 1024).toFixed(1)} KB · ${esc(d.language)}</div></div>
         </div>
