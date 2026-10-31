@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .gitio import GitError, run_git, run_git_plain
-from .llm import USER_AGENT
+from .llm import USER_AGENT, tls_context
 
 _GITHUB = re.compile(
     r"^(?:https?://)?(?:www\.)?github\.com/([A-Za-z0-9_.\-]+)/([A-Za-z0-9_.\-]+?)(?:\.git)?/?(?:[#?].*)?$")
@@ -101,7 +101,7 @@ class RepoRegistry:
         req = urllib.request.Request(f"https://api.github.com/repos/{owner}/{name}",
                                      headers={"User-Agent": USER_AGENT, "Accept": "application/vnd.github+json"})
         try:
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10, context=tls_context()) as resp:
                 info = json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             if exc.code == 404:

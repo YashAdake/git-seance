@@ -13,7 +13,7 @@ from urllib.parse import parse_qs, urlparse
 from . import __version__
 from .gitio import GitError
 from .llm import LLMError, Usage
-from .medium import check_citations, summon
+from .medium import check_citations, summon, tidy
 from .service import NotFound, RateLimited, Seance
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
@@ -179,8 +179,8 @@ def make_handler(seance: Seance):
                 for delta in summon(seance.llm, dossier, history, question, usage):
                     text.append(delta)
                     emit("token", {"t": delta})
-                reply = "".join(text)
-                emit("done", {"citations": check_citations(reply, dossier.known_shas),
+                reply = tidy("".join(text))
+                emit("done", {"text": reply, "citations": check_citations(reply, dossier.known_shas),
                               "usage": usage.to_dict()})
             except LLMError as exc:
                 emit("error", {"error": str(exc)})

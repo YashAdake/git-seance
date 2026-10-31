@@ -545,7 +545,7 @@ function renderChamber() {
           ${g.former_names.length ? `<div class="fact"><div class="k">Former names</div><div class="v pills">${g.former_names.map((n) => `<span class="pill">${esc(n)}</span>`).join("")}</div></div>` : ""}
           ${d.buried_with_total ? `<div class="fact"><div class="k">Buried alongside</div><div class="v"><div class="pills">${d.buried_with.slice(0, 8).map((p) => `<span class="pill">${esc(p)}</span>`).join("")}${d.buried_with_total > 8 ? `<span class="pill">+${d.buried_with_total - 8} more</span>` : ""}</div></div></div>` : ""}
           ${d.successors.length ? `<div class="fact"><div class="k">Heir</div><div class="v pills">${d.successors.map((s) => `<span class="pill heir">${esc(s.path)}</span>`).join("")}</div></div>` : ""}
-          <div class="fact"><div class="k">Last body</div><div class="v">${d.binary ? "binary" : `${plural(d.line_count, "line")}`} · ${(d.size_bytes / 1024).toFixed(1)} KB · ${esc(d.language)}</div></div>
+          <div class="fact"><div class="k">Last body</div><div class="v">${d.binary ? "binary" : d.size_bytes === 0 ? "an empty file" : plural(d.line_count, "line")}${d.size_bytes ? ` · ${(d.size_bytes / 1024).toFixed(1)} KB` : ""} · ${esc(d.language)}</div></div>
         </div>
         <div class="panel facts">
           <h3>A life in commits</h3>
@@ -605,14 +605,18 @@ function renderChamber() {
 function ghostText(text, citations) {
   const ok = new Set(citations?.verified || []);
   const bad = new Set(citations?.invented || []);
-  return esc(text).replace(/\[([0-9a-f]{7,40})\]/g, (m, h) => {
+  const chip = (h) => {
     if (bad.has(h)) return `<span class="cite bad" title="No such commit in this ghost's records">${h.slice(0, 7)}</span>`;
     const full = state.ghost?.known_shas.find((s) => s.startsWith(h));
     if (full && state.ghost.commit_url && (!citations || ok.has(h))) {
       return `<a class="cite" href="${esc(state.ghost.commit_url.replace("{sha}", full))}" target="_blank" rel="noopener" title="Verified: this commit is in the records">${h.slice(0, 7)}</a>`;
     }
     return `<span class="cite" title="${full ? "Verified: this commit is in the records" : "Checking…"}">${h.slice(0, 7)}</span>`;
-  }).replace(/\n/g, "<br>");
+  };
+  // [abc1234] or a group like [abc1234, def5678]: one chip per commit.
+  return esc(text)
+    .replace(/\[([0-9a-f]{7,40}(?:\s*[,;]\s*[0-9a-f]{7,40})*)\]/g, (m, group) => group.split(/\s*[,;]\s*/).map(chip).join(""))
+    .replace(/\n/g, "<br>");
 }
 
 function addMsg(cls, html) {
@@ -694,6 +698,7 @@ async function speak(question) {
     el.classList.add("error");
     el.innerHTML = `The connection fades… ${esc(failure)}`;
   } else {
+    if (done?.text) text = done.text;
     el.innerHTML = ghostText(text, done?.citations) + metaLine(done?.usage, done?.citations);
     state.chat.push({ role: "user", content: question || OPENING }, { role: "assistant", content: text });
   }

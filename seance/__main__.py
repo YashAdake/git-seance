@@ -13,7 +13,7 @@ from .config import Settings
 from .gitio import GitError
 from .history import find_ghosts
 from .llm import LLMError, Usage
-from .medium import check_citations, fallback_epitaph, summon
+from .medium import check_citations, fallback_epitaph, summon, tidy
 from .server import serve
 from .service import NotFound, Seance
 
@@ -77,7 +77,7 @@ def cmd_summon(args) -> int:
         except LLMError as exc:
             print(f"\n{BLOOD}  the connection fades: {exc}{RESET}")
             return 1
-        text = "".join(reply)
+        text = tidy("".join(reply))
         cites = check_citations(text, d.known_shas)
         badge = f"{len(cites['verified'])} verified citations"
         if cites["invented"]:

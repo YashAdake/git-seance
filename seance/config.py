@@ -38,6 +38,7 @@ class Settings:
     llm_base_url: str
     llm_api_key: str
     llm_model: str
+    llm_thinking: bool
     cache_dir: Path
     demo_repos: list[str]
     allow_remote: bool
@@ -55,6 +56,7 @@ class Settings:
             llm_base_url=env("SEANCE_LLM_BASE_URL", DEFAULT_BASE_URL),
             llm_api_key=env("SEANCE_LLM_API_KEY", ""),
             llm_model=env("SEANCE_LLM_MODEL", DEFAULT_MODEL),
+            llm_thinking=env("SEANCE_LLM_THINKING", "0") == "1",
             cache_dir=Path(env("SEANCE_CACHE_DIR", "") or default_cache_dir()),
             demo_repos=[r.strip() for r in env("SEANCE_DEMO_REPOS", DEFAULT_DEMO_REPOS).split(",") if r.strip()],
             allow_remote=env("SEANCE_ALLOW_REMOTE", "1") == "1",

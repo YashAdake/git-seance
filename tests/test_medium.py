@@ -3,7 +3,7 @@ import unittest
 from seance.dossier import Dossier, LifeEvent
 from seance.history import Ghost
 from seance.llm import LLMError, parse_json_reply
-from seance.medium import check_citations, fallback_epitaph, render_records, summon_messages
+from seance.medium import check_citations, fallback_epitaph, render_records, summon_messages, tidy
 from seance.redact import redact
 from seance.repos import parse_github
 
@@ -52,6 +52,12 @@ class CitationTests(unittest.TestCase):
         known = ["aaaaaaa1111", "bbbbbbb2222"]
         res = check_citations("Born in [aaaaaaa], killed in [bbbbbbb] and [ccccccc]. [aaaaaaa]", known)
         self.assertEqual(res, {"verified": ["aaaaaaa", "bbbbbbb"], "invented": ["ccccccc"]})
+
+    def test_grouped_citations_and_pseudo_citations(self):
+        known = ["aaaaaaa1111", "bbbbbbb2222"]
+        res = check_citations("Gone twice [aaaaaaa, bbbbbbb] and once [ccccccc; aaaaaaa].", known)
+        self.assertEqual(res, {"verified": ["aaaaaaa", "bbbbbbb"], "invented": ["ccccccc"]})
+        self.assertEqual(tidy("Shaped by many [RECORDS]."), "Shaped by many.")
 
 
 class RecordsTests(unittest.TestCase):

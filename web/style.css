@@ -417,9 +417,9 @@ pre.code mark { background: rgba(255, 92, 92, .25); color: #ffb3b3; border-radiu
 @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .msg.ghost .cursor { display: inline-block; width: 8px; height: 18px; background: rgba(233, 251, 255, .7); vertical-align: -3px; margin-left: 2px; animation: blink 1s steps(2) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
-.msg.ghost .cite { font: 500 11.5px var(--font-code); font-style: normal; text-shadow: none; vertical-align: 2px; margin: 0 2px;
+.cite { font: 500 11.5px var(--font-code); font-style: normal; text-shadow: none; vertical-align: 2px; margin: 0 2px;
   padding: 1px 6px; border-radius: 6px; color: #b6fff6; background: rgba(46,196,182,.12); border: 1px solid rgba(46,196,182,.35); }
-.msg.ghost .cite.bad { color: #ffb3b3; background: rgba(255,92,92,.12); border-color: rgba(255,92,92,.45); text-decoration: line-through; }
+.cite.bad { color: #ffb3b3; background: rgba(255,92,92,.12); border-color: rgba(255,92,92,.45); text-decoration: line-through; }
 .msg.ghost.error { color: #ffb3b3; text-shadow: none; }
 .meta { font: 11.5px var(--font-ui); font-style: normal; color: var(--mist-dim); text-shadow: none; margin-top: 4px; }
 .meta .ok { color: #7fe3d6; }

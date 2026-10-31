@@ -8,6 +8,10 @@ The ghost answers in its own voice through **Gemma**, Google's open-weight model
 
 Built for the DEV **Hacktoberfest 2026 Open-Source AI Challenge, Week 4: _Ghost in the Machine_**, in the spirit of Día de los Muertos: the dead are remembered, not feared.
 
+![The graveyard of psf/requests](docs/img/graveyard.png)
+
+![A séance with requests/async.py](docs/img/seance.png)
+
 ---
 
 ## What it does

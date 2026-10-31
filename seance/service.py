@@ -57,7 +57,8 @@ class Seance:
         self.settings = settings
         settings.cache_dir.mkdir(parents=True, exist_ok=True)
         self.registry = RepoRegistry(settings.cache_dir, max_repo_mb=settings.max_repo_mb)
-        self.llm = LLM(settings.llm_base_url, settings.llm_api_key, settings.llm_model)
+        self.llm = LLM(settings.llm_base_url, settings.llm_api_key, settings.llm_model,
+                       thinking=settings.llm_thinking)
         self.limiter = Limiter(settings.llm_calls_per_ip_hour, settings.llm_calls_per_day)
         self._graveyards: dict[str, dict] = {}
         self._dossiers: OrderedDict[tuple[str, str], Dossier] = OrderedDict()

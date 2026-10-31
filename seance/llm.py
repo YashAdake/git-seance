@@ -7,7 +7,10 @@ the model is a config change, which is the point of building on open weights.
 
 from __future__ import annotations
 
+import functools
 import json
+import ssl
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -15,6 +18,28 @@ from dataclasses import dataclass, field
 from typing import Iterator
 
 USER_AGENT = "git-seance/0.1 (+https://github.com/YashAdake/git-seance)"
+
+
+@functools.lru_cache(maxsize=1)
+def tls_context() -> ssl.SSLContext:
+    """Certificate-verifying TLS context.
+
+    On Windows, Python also loads the *intermediate* store, which can hold stale
+    copies of cross-signed certificates (e.g. Let's Encrypt's 2020 "ISRG Root X2"
+    signed by X1, expired 2025). OpenSSL then prefers the stale copy and rejects
+    valid servers as "certificate has expired". Trusting only the root store
+    avoids that without weakening verification.
+    """
+    if sys.platform != "win32":
+        return ssl.create_default_context()
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    for der, encoding, trust in ssl.enum_certificates("ROOT"):
+        if encoding == "x509_asn" and (trust is True or ssl.Purpose.SERVER_AUTH.oid in trust):
+            try:
+                ctx.load_verify_locations(cadata=der)
+            except ssl.SSLError:
+                continue
+    return ctx
 
 
 class LLMError(RuntimeError):
@@ -40,11 +65,22 @@ class Completion:
 
 
 class LLM:
-    def __init__(self, base_url: str, api_key: str, model: str, *, timeout: float = 90):
+    def __init__(self, base_url: str, api_key: str, model: str, *, timeout: float = 90,
+                 thinking: bool = False):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.model = model
         self.timeout = timeout
+        # Gemma 4 "thinks" by default, spending hidden tokens before it speaks.
+        # A ghost should answer at once; grounding comes from the records and the
+        # citation check, not from private reasoning.
+        self.thinking = thinking
+
+    def _payload(self, messages: list[dict], **params) -> dict:
+        payload = {"model": self.model, "messages": messages, **params}
+        if not self.thinking:
+            payload["chat_template_kwargs"] = {"enable_thinking": False}
+        return payload
 
     @property
     def enabled(self) -> bool:
@@ -64,7 +100,8 @@ class LLM:
         delay = 1.5
         for attempt in range(3):
             try:
-                return urllib.request.urlopen(self._request(payload), timeout=self.timeout)
+                return urllib.request.urlopen(self._request(payload), timeout=self.timeout,
+                                              context=tls_context())
             except urllib.error.HTTPError as exc:
                 detail = exc.read().decode("utf-8", "replace")[:300]
                 if exc.code in (429, 500, 502, 503, 504) and attempt < 2:
@@ -82,8 +119,7 @@ class LLM:
 
     def chat(self, messages: list[dict], *, max_tokens: int = 600, temperature: float = 0.7,
              json_mode: bool = False) -> Completion:
-        payload = {"model": self.model, "messages": messages,
-                   "max_tokens": max_tokens, "temperature": temperature}
+        payload = self._payload(messages, max_tokens=max_tokens, temperature=temperature)
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
         t0 = time.monotonic()
@@ -105,9 +141,8 @@ class LLM:
         """Yield text deltas. Fills `usage` in place when the stream ends."""
         usage = usage if usage is not None else Usage()
         usage.model = self.model
-        payload = {"model": self.model, "messages": messages, "max_tokens": max_tokens,
-                   "temperature": temperature, "stream": True,
-                   "stream_options": {"include_usage": True}}
+        payload = self._payload(messages, max_tokens=max_tokens, temperature=temperature, stream=True,
+                                stream_options={"include_usage": True})
         t0 = time.monotonic()
         with self._open(payload) as resp:
             for raw in resp:
