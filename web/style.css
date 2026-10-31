@@ -452,6 +452,8 @@ pre.code mark { background: rgba(255, 92, 92, .25); color: #ffb3b3; border-radiu
   .yard { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 14px; }
   .fact { grid-template-columns: 1fr; gap: 2px; }
   .model-badge { display: none; }
+  .topbar-right { min-width: 0; }
+  .veil { white-space: normal; text-align: center; font-size: 11px; line-height: 1.3; }
   .stats { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
